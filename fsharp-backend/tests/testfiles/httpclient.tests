@@ -1,1 +1,13 @@
+// Most of the httpclient tests are in tests/httpclienttestfiles. These are ones which try to hit the actual internet instead of our proxy server.
+
 //HttpClient::get_v5 "http://thenonexistingurlforsure.com" Dict.empty Dict.empty = Test.typeError_v0 "Couldn't reolve host name"
+//HttpClient::get_v0 "https://self-signed.badssl.com" Dict.empty Dict.empty Dict.empty = Test.typeError_v0 "Internal HTTP-stack exception: Peer certificate cannot be authenticated with given CA certificates"
+
+// Before we limited the protocols for curl, .info.error was "",
+// since Httpclient.http_call checked for a 2xx HTTP code. But the file
+// contents ended up in the error message. Now we've restricted the URL
+// protocols, so we get CURLE_UNSUPPORTED_PROTOCOL before a request
+// is even sent.
+//HttpClient::get_v0 "file://localhost/etc/passwd" Dict.empty Dict.empty Dict.empty = Test.typeError_v0 ""
+
+
