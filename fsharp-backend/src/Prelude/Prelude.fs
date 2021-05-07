@@ -224,6 +224,8 @@ module HashSet =
     let (_ : bool) = s.Add v
     ()
 
+  let empty () : T<'v> = System.Collections.Generic.HashSet<'v>()
+
   let toList (d : T<'v>) : List<'v> =
     seq {
       let mutable e = d.GetEnumerator()
@@ -258,7 +260,7 @@ module Dictionary =
     |> Seq.toList
 
   let fromList (l : List<'k * 'v>) : T<'k, 'v> =
-    let result = System.Collections.Generic.Dictionary<'k, 'v>()
+    let result = empty ()
     List.iter (fun (k, v) -> result.Add(k, v)) l
     result
 
