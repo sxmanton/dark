@@ -116,6 +116,7 @@ let fileTests () : Test =
   let dir = "tests/testfiles/"
 
   System.IO.Directory.GetFiles(dir, "*.tests")
+  |> Array.filter ((<>) "README.md")
   |> Array.map
        (fun file ->
          let filename = System.IO.Path.GetFileName file
