@@ -244,6 +244,7 @@ let testsFromFiles =
   let dir = "tests/httptestfiles/"
 
   System.IO.Directory.GetFiles(dir, "*")
+  |> Array.filter ((<>) "tests/httptestfiles/README.md")
   |> Array.map (System.IO.Path.GetFileName)
   |> Array.toList
   |> List.map t
