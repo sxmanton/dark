@@ -359,52 +359,29 @@ let taskv = TaskOrValueBuilder()
 let map_s (f : 'a -> TaskOrValue<'b>) (list : List<'a>) : TaskOrValue<List<'b>> =
   taskv {
     let! result =
-      match list with
-      | [] -> taskv { return [] }
-      | head :: tail ->
+      List.fold
+        (fun (accum : TaskOrValue<List<'b>>) (arg : 'a) ->
           taskv {
-            let firstComp =
-              taskv {
-                let! result = f head
-                return ([], result)
-              }
+            let! completed = accum
+            let! result = f arg
+            return result :: completed
+          })
+        (taskv { return [] })
+        list
 
-            let! ((accum, lastcomp) : (List<'b> * 'b)) =
-              List.fold
-                (fun (prevcomp : TaskOrValue<List<'b> * 'b>) (arg : 'a) ->
-                  taskv {
-                    // Ensure the previous computation is done first
-                    let! ((accum, prev) : (List<'b> * 'b)) = prevcomp
-                    let! result = f arg
-
-                    return (prev :: accum, result)
-                  })
-                firstComp
-                tail
-
-            return List.rev (lastcomp :: accum)
-          }
-
-    return (result |> Seq.toList)
+    return List.rev result
   }
 
 let iter_s (f : 'a -> TaskOrValue<unit>) (list : List<'a>) : TaskOrValue<unit> =
-  taskv {
-    match list with
-    | [] -> return ()
-    | head :: tail ->
-        return!
-          List.fold
-            (fun (prevcomp : TaskOrValue<unit>) (arg : 'a) ->
-              taskv {
-                // Ensure the previous computation is done first
-                let! (prev : unit) = prevcomp
-                return! f arg
-              })
-            (f head)
-            tail
-  }
-
+  List.fold
+    (fun (accum : TaskOrValue<unit>) (arg : 'a) ->
+      taskv {
+        let! () = accum
+        let! result = f arg
+        return result
+      })
+    (taskv { return () })
+    list
 
 let filter_s
   (f : 'a -> TaskOrValue<bool>)
@@ -412,42 +389,37 @@ let filter_s
   : TaskOrValue<List<'a>> =
   taskv {
     let! result =
-      match list with
-      | [] -> taskv { return [] }
-      | head :: tail ->
+      List.fold
+        (fun (accum : TaskOrValue<List<'a>>) (arg : 'a) ->
           taskv {
-            let firstComp =
-              taskv {
-                let! keep = f head
-                return ([], (keep, head))
-              }
+            let! completed = accum
+            let! result = f arg
+            return if result then arg :: completed else completed
+          })
+        (taskv { return [] })
+        list
 
-            let! ((accum, lastcomp) : (List<'a> * (bool * 'a))) =
-              List.fold
-                (fun (prevcomp : TaskOrValue<List<'a> * (bool * 'a)>) (arg : 'a) ->
-                  taskv {
-                    // Ensure the previous computation is done first
-                    let! ((accum, (prevkeep, prev)) : (List<'a> * (bool * 'a))) =
-                      prevcomp
-
-                    let accum = if prevkeep then prev :: accum else accum
-
-                    let! keep = (f arg)
-
-                    return (accum, (keep, arg))
-                  })
-                firstComp
-                tail
-
-            let (lastkeep, lastval) = lastcomp
-
-            let accum = if lastkeep then lastval :: accum else accum
-
-            return List.rev accum
-          }
-
-    return (result |> Seq.toList)
+    return List.rev result
   }
+
+
+let find_s
+  (f : 'a -> TaskOrValue<bool>)
+  (list : List<'a>)
+  : TaskOrValue<Option<'a>> =
+  List.fold
+    (fun (accum : TaskOrValue<Option<'a>>) (arg : 'a) ->
+      taskv {
+        match! accum with
+        | Some v -> return Some v
+        | None ->
+            let! result = f arg
+            return (if result then Some arg else None)
+      })
+    (taskv { return None })
+    list
+
+
 
 // ----------------------
 // Lazy utilities
