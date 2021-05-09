@@ -342,12 +342,11 @@ module Expect =
           else
             List.map toString list |> String.concat "; " |> fun s -> $"[{s}]"
 
-        Expect.equal lLength rLength $"{lenMsg ls} <> {lenMsg rs} in ({msg})"
         List.iter2 de ls rs
+        Expect.equal lLength rLength $"{lenMsg ls} <> {lenMsg rs} in ({msg})"
     | DObj ls, DObj rs ->
         let lLength = Map.count ls
         let rLength = Map.count rs
-        Expect.equal lLength rLength $"{ls.ToString()} <> {rs.ToString()} in ({msg})"
 
         List.iter2
           (fun (k1, v1) (k2, v2) ->
@@ -355,6 +354,8 @@ module Expect =
             de v1 v2)
           (Map.toList ls)
           (Map.toList rs)
+
+        Expect.equal lLength rLength $"{ls.ToString()} <> {rs.ToString()} in ({msg})"
     | DHttpResponse (Response (sc1, h1, b1)), DHttpResponse (Response (sc2, h2, b2)) ->
         Expect.equal sc1 sc2 msg
         Expect.equal h1 h2 msg
@@ -392,8 +393,8 @@ module Expect =
     let eeq (v : 'a) (v' : 'a) = Expect.equal v v' ""
 
     let eqList (l1 : List<RT.Pattern>) (l2 : List<RT.Pattern>) =
-      Expect.equal (List.length l1) (List.length l2) ""
       List.iter2 eq l1 l2
+      Expect.equal (List.length l1) (List.length l2) ""
 
     match (p, p') with
     | PVariable (_, name), PVariable (_, name') -> eeq name name'
@@ -746,6 +747,7 @@ module Http =
 
     // read the status like (eg HTTP 200 OK)
     let status, bytes = consume [] bytes
+    printfn "status is %s" (status |> Array.ofList |> ofBytes)
 
     let headers, body = consumeHeaders [] bytes
 
